@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Photosynthesis Lab: the leaf disk assay</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%232f7d32'/%3E%3Ccircle cx='16' cy='16' r='8' fill='%23fff'/%3E%3C/svg%3E">
+<style>
+  :root { --ink: #1c2430; --paper: #f6f6f2; --panel: #ffffff; --line: #d7d9d4; --accent: #2f7d32; --accent-ink: #fff; --muted: #5f6872; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); background: var(--paper); }
+  header { padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--panel); display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+  header h1 { font-size: 18px; margin: 0; }
+  header .sub { color: var(--muted); }
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 12px; padding: 12px 16px; }
+  @media (max-width: 980px) { main { grid-template-columns: 1fr; } }
+  #stage { position: relative; background: #e6e6e0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; aspect-ratio: 16 / 10; }
+  #unity-canvas { width: 100%; height: 100%; display: block; background: #e6e6e0; }
+  #loading { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--muted); background: #e6e6e0; }
+  #loading .bar { width: 240px; height: 6px; background: #cfd2cb; border-radius: 3px; overflow: hidden; }
+  #loading .bar i { display: block; height: 100%; width: 0; background: var(--accent); }
+  #banner { position: absolute; left: 12px; bottom: 12px; right: 12px; padding: 8px 12px; background: #fff3cd; border: 1px solid #e0c36a; border-radius: 6px; display: none; }
+  .lenses { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 10px; }
+  .lenses button { padding: 6px 12px; border: 1px solid var(--line); background: var(--panel); border-radius: 999px; cursor: pointer; font: inherit; }
+  .lenses button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  aside { display: flex; flex-direction: column; gap: 12px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
+  .card h2 { font-size: 14px; margin: 0 0 8px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; margin: 6px 0; }
+  .row label { color: var(--ink); }
+  .row input[type=range] { width: 150px; }
+  .row select, .row input[type=number] { font: inherit; padding: 3px 6px; }
+  .row output { min-width: 64px; text-align: right; font-variant-numeric: tabular-nums; }
+  .run { display: flex; gap: 6px; margin-top: 8px; }
+  .run button { flex: 1; padding: 7px 0; font: inherit; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); cursor: pointer; }
+  .run button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  td, th { padding: 3px 4px; border-bottom: 1px solid var(--line); text-align: right; }
+  td:first-child, th:first-child { text-align: left; }
+  .spectrum { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; align-items: end; height: 90px; margin: 8px 0 4px; }
+  .spectrum i { display: block; border-radius: 3px 3px 0 0; min-height: 2px; }
+  .spectrum-labels { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; font-size: 11px; color: var(--muted); text-align: center; }
+  .hint { color: var(--muted); font-size: 13px; margin: 6px 0 0; }
+  .big { font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .seaonly { display: none; }
+  body.marine .seaonly { display: grid; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Photosynthesis Lab</h1>
+  <span class="sub">The floating leaf disk assay, seen through every science that explains it.</span>
+</header>
+<main>
+  <section>
+    <nav class="lenses" id="lenses" aria-label="Lens">
+      <button data-lens="bench" class="on">Bench</button>
+      <button data-lens="physics">Physics</button>
+      <button data-lens="chemistry">Chemistry</button>
+      <button data-lens="biology">Biology</button>
+      <button data-lens="microbiology">Microbiology</button>
+      <button data-lens="math">Math</button>
+      <button data-lens="earth">Earth science</button>
+    </nav>
+    <div id="stage">
+      <canvas id="unity-canvas" tabindex="-1" aria-label="3D fume hood holding a lamp over four cups of leaf disks, a rack of colour filters, syringes, a specimen shelf, a seagrass tank, a PAR meter and a timer"></canvas>
+      <div id="loading"><div>Loading the lab…</div><div class="bar"><i id="progress"></i></div></div>
+      <div id="banner"></div>
+    </div>
+    <div class="card" id="readout" style="margin-top:12px">
+      <h2 id="readout-title">Bench</h2>
+      <div id="readout-body" class="hint">Set up the cups, then start the run. Switch lenses at any time: every lens reads the same experiment.</div>
+    </div>
+  </section>
+  <aside>
+    <div class="card">
+      <h2>Set-up</h2>
+      <div class="row"><label for="specimen">Specimen</label>
+        <select id="specimen">
+          <option value="spinach">spinach</option>
+          <option value="coleus">coleus (green)</option>
+          <option value="coleus-white">coleus (white)</option>
+          <option value="seagrass">turtle grass (tank)</option>
+        </select></div>
+      <div class="row"><label for="filter">Filter</label>
+        <select id="filter">
+          <option value="clear">none</option><option value="blue">blue</option><option value="green">green</option><option value="red">red</option>
+        </select></div>
+      <div class="row"><label for="distance">Lamp distance</label><span><input type="range" id="distance" min="5" max="50" step="1" value="15"> <output id="distance-out">15 cm</output></span></div>
+      <div class="row"><label for="bicarb">NaHCO₃ (% w/v)</label><span><input type="range" id="bicarb" min="0" max="1" step="0.05" value="0.2"> <output id="bicarb-out">0.20 %</output></span></div>
+      <div class="row"><label for="ambient">Room temperature</label><span><input type="range" id="ambient" min="10" max="40" step="1" value="22"> <output id="ambient-out">22 °C</output></span></div>
+      <div class="row"><label for="detergent">Drop of detergent added</label><input type="checkbox" id="detergent" checked></div>
+      <div class="row"><label for="infiltration">Disks that sank after the syringe</label><span><input type="range" id="infiltration" min="0" max="1" step="0.1" value="1"> <output id="infiltration-out">10 of 10</output></span></div>
+      <div class="row seaonly"><label for="depth">Simulated depth</label><span><input type="range" id="depth" min="0" max="5" step="0.25" value="0.5"> <output id="depth-out">0.5 m</output></span></div>
+      <div class="row seaonly"><label for="kd">Water clarity (K<sub>d</sub>)</label><span><input type="range" id="kd" min="0.1" max="3" step="0.1" value="0.4"> <output id="kd-out">0.4 /m</output></span></div>
+      <div class="row seaonly"><label for="salinity">Salinity</label><span><input type="range" id="salinity" min="0" max="45" step="1" value="35"> <output id="salinity-out">35 ppt</output></span></div>
+    </div>
+    <div class="card">
+      <h2>Run</h2>
+      <div class="row"><label for="speed">Lab clock</label>
+        <select id="speed"><option value="1">real time</option><option value="10" selected>10× faster</option><option value="60">60× faster</option></select></div>
+      <div class="big" id="clock">00:00</div>
+      <div class="run"><button id="start" class="primary">Start</button><button id="stop">Pause</button><button id="reset">Reset</button></div>
+      <p class="hint" id="disks-line">10 disks on the bottom.</p>
+    </div>
+  </aside>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  var unity = null, state = null, lens = 'bench';
+  function $(id) { return document.getElementById(id); }
+  function send(method, value) {
+    if (!unity) return;
+    try { unity.SendMessage('Lab', method, value == null ? '' : String(value)); } catch (e) { console.error(e); }
+  }
+  function fmt(x, d) { return (x == null || isNaN(x)) ? '–' : Number(x).toFixed(d == null ? 1 : d); }
+  function clock(min) { var t = Math.floor(min * 60); return ('0' + Math.floor(t / 60)).slice(-2) + ':' + ('0' + (t % 60)).slice(-2); }
+
+  // ---- lenses --------------------------------------------------------------------------------
+  var lensButtons = $('lenses').querySelectorAll('button');
+  Array.prototype.forEach.call(lensButtons, function (b) {
+    b.addEventListener('click', function () { setLens(b.getAttribute('data-lens')); });
+  });
+  function setLens(name) {
+    lens = name;
+    Array.prototype.forEach.call(lensButtons, function (b) { b.classList.toggle('on', b.getAttribute('data-lens') === name); });
+    send('SetLens', name);
+    render();
+  }
+
+  // ---- controls ------------------------------------------------------------------------------
+  function wire(id, method, outId, fmtFn) {
+    var el = $(id);
+    function push() {
+      var v = el.type === 'checkbox' ? (el.checked ? '1' : '0') : el.value;
+      if (outId) $(outId).textContent = fmtFn(el.value);
+      send(method, v);
+    }
+    el.addEventListener('input', push);
+    el.addEventListener('change', push);
+    return push;
+  }
+  var pushers = [
+    wire('specimen', 'SetSpecimen'),
+    wire('filter', 'SetFilter'),
+    wire('distance', 'SetLampDistance', 'distance-out', function (v) { return v + ' cm'; }),
+    wire('bicarb', 'SetBicarbonate', 'bicarb-out', function (v) { return Number(v).toFixed(2) + ' %'; }),
+    wire('ambient', 'SetAmbient', 'ambient-out', function (v) { return v + ' °C'; }),
+    wire('detergent', 'SetDetergent'),
+    wire('infiltration', 'SetInfiltration', 'infiltration-out', function (v) { return Math.round(v * 10) + ' of 10'; }),
+    wire('depth', 'SetDepth', 'depth-out', function (v) { return v + ' m'; }),
+    wire('kd', 'SetTurbidity', 'kd-out', function (v) { return v + ' /m'; }),
+    wire('salinity', 'SetSalinity', 'salinity-out', function (v) { return v + ' ppt'; }),
+    wire('speed', 'SetSpeed')
+  ];
+  $('specimen').addEventListener('change', function () { document.body.classList.toggle('marine', $('specimen').value === 'seagrass'); });
+  $('start').addEventListener('click', function () { send('StartRun'); });
+  $('stop').addEventListener('click', function () { send('StopRun'); });
+  $('reset').addEventListener('click', function () { send('ResetRun'); });
+
+  // ---- readouts ------------------------------------------------------------------------------
+  var BIN_COLORS = ['#6a4cff', '#2a7fff', '#2fbf4a', '#e8c21a', '#ff7a1a', '#e0262b'];
+  function render() {
+    var title = $('readout-title'), body = $('readout-body');
+    var s = state;
+    if (!s) { body.className = 'hint'; body.textContent = 'Waiting for the lab…'; return; }
+    body.className = '';
+    $('clock').textContent = clock(s.minutes);
+    $('disks-line').textContent = s.sunk + ' on the bottom, ' + s.floated + ' floating' + (s.excluded ? ', ' + s.excluded + ' never sank (not counted)' : '') + (s.et50 >= 0 ? '. ET50 = ' + fmt(s.et50) + ' min' : '') + '.';
+    var h = '';
+    if (lens === 'bench') {
+      title.textContent = 'Bench';
+      h = '<p>' + s.specimen + ', ' + s.filter + ' filter, lamp at ' + fmt(s.lampDistanceCm, 0) + ' cm, ' + fmt(s.bicarbonatePercent, 2) + ' % NaHCO₃. Water ' + fmt(s.waterCelsius) + ' °C.</p>';
+    } else if (lens === 'physics') {
+      title.textContent = 'Physics: light';
+      h = '<div class="row"><span>PAR at the lamp distance, no filter (inverse square)</span><b>' + fmt(s.parUnfiltered, 0) + '</b></div>' +
+          '<div class="row"><span>PAR at the water surface, after the filter (what the meter reads)</span><b>' + fmt(s.parSurface, 0) + '</b></div>' +
+          (s.specimen === 'seagrass' ? '<div class="row"><span>PAR at the blades, after ' + fmt(s.depthM, 2) + ' m of water (Beer–Lambert, K<sub>d</sub> = ' + fmt(s.kdPerM) + ' /m)</span><b>' + fmt(s.parLeaf, 0) + '</b></div>' : '') +
+          '<div class="row"><span>Photons the pigments can use (weighted by the action spectrum)</span><b>' + fmt(s.parEffective, 0) + '</b></div>' +
+          '<p class="hint">µmol photons m⁻² s⁻¹</p>';
+      var max = Math.max.apply(null, s.binFlux.concat([1]));
+      h += '<div class="spectrum">' + s.binFlux.map(function (v, i) { return '<i style="height:' + Math.max(2, 100 * v / max) + '%;background:' + BIN_COLORS[i] + '" title="' + fmt(v, 0) + '"></i>'; }).join('') + '</div>';
+      h += '<div class="spectrum-labels">' + s.binNm.map(function (nm, i) { return nm + ' nm<br>' + fmt(s.binEnergyEv[i], 2) + ' eV'; }).join('') + '</div>';
+      h += '<p class="hint">E = hc/λ. A red photon carries less energy than a blue one, yet drives photosynthesis at least as well: the reaction centres count photons, not joules.</p>';
+    } else if (lens === 'chemistry') {
+      title.textContent = 'Chemistry: the carbon supply';
+      h = '<div class="row"><span>Dissolved inorganic carbon</span><b>' + fmt(s.dicMm, 1) + ' mM</b></div>' +
+          '<div class="row"><span>pH</span><b>' + fmt(s.pH, 1) + '</b></div>' +
+          '<table><tr><th>Species</th><th>Fraction</th><th>mM</th></tr>' +
+          '<tr><td>CO₂(aq)</td><td>' + fmt(s.fracCO2, 3) + '</td><td>' + fmt(s.fracCO2 * s.dicMm, 2) + '</td></tr>' +
+          '<tr><td>HCO₃⁻</td><td>' + fmt(s.fracHCO3, 3) + '</td><td>' + fmt(s.fracHCO3 * s.dicMm, 2) + '</td></tr>' +
+          '<tr><td>CO₃²⁻</td><td>' + fmt(s.fracCO3, 3) + '</td><td>' + fmt(s.fracCO3 * s.dicMm, 2) + '</td></tr></table>' +
+          '<div class="row"><span>Carbon limitation factor, C/(K + C)</span><b>' + fmt(s.bicarbonateFactor, 2) + '</b></div>' +
+          '<div class="row"><span>Temperature factor (water ' + fmt(s.waterCelsius) + ' °C)</span><b>' + fmt(s.temperatureFactor, 2) + '</b></div>' +
+          '<p class="hint">6 CO₂ + 6 H₂O → C₆H₁₂O₆ + 6 O₂. One O₂ out for one CO₂ in: the oxygen that floats the disks is a count of carbon fixed.</p>';
+    } else if (lens === 'biology') {
+      title.textContent = 'Biology: the rate';
+      h = '<div class="row"><span>Gross photosynthesis</span><b>' + fmt(s.grossRate * 1000, 1) + ' nmol O₂ disk⁻¹ min⁻¹</b></div>' +
+          '<div class="row"><span>Respiration</span><b>−' + fmt(s.respiration * 1000, 1) + '</b></div>' +
+          '<div class="row"><span>Net rate</span><b>' + fmt(s.netRate * 1000, 1) + '</b></div>' +
+          '<div class="row"><span>Light saturation, tanh(αI / P<sub>max</sub>)</span><b>' + fmt(s.lightFactor, 2) + '</b></div>' +
+          '<p class="hint">The disks only rise once net O₂ is positive and enough has gathered in the air spaces to overcome the weight of the tissue.</p>';
+    } else if (lens === 'microbiology') {
+      title.textContent = 'Microbiology';
+      h = '<p class="hint">Coming next: swap the disks for a Chlorella culture and count cells on the hemocytometer. The same model runs; the "disk" becomes a cell.</p>';
+    } else if (lens === 'math') {
+      title.textContent = 'Math: the data';
+      h = '<table><tr><th>Disk</th><th>Floated at (min)</th></tr>' + s.floatMinutes.map(function (t, i) {
+        return '<tr><td>' + (i + 1) + '</td><td>' + (t < 0 ? '—' : (t === 0 && s.excluded ? 'never sank' : fmt(t, 1))) + '</td></tr>'; }).join('') + '</table>' +
+        '<div class="row"><span>Floating</span><b>' + s.floated + ' of ' + (10 - s.excluded) + '</b></div>' +
+        '<div class="row"><span>ET50 (median float time)</span><b>' + (s.et50 >= 0 ? fmt(s.et50, 1) + ' min' : 'not yet') + '</b></div>' +
+        '<p class="hint">Rate ∝ 1/ET50. Plot 1/ET50 against lamp distance, filter, or bicarbonate to compare conditions.</p>';
+    } else if (lens === 'earth') {
+      title.textContent = 'Earth science: scaling up';
+      h = '<div class="row"><span>Net O₂ per square metre of leaf</span><b>' + fmt(s.netPerM2PerSecond, 1) + ' µmol m⁻² s⁻¹</b></div>' +
+          '<div class="row"><span>Carbon fixed per square metre, 12 h of light</span><b>' + fmt(s.gramsCarbonPerM2PerDay, 2) + ' g C day⁻¹</b></div>' +
+          (s.specimen === 'seagrass' ? '<div class="row"><span>Depth / clarity / salinity</span><b>' + fmt(s.depthM, 2) + ' m / ' + fmt(s.kdPerM) + ' /m / ' + fmt(s.salinityPpt, 0) + ' ppt</b></div>' : '') +
+          '<p class="hint">A seagrass meadow is a carbon sink only while light reaches it. Raise the turbidity and watch the rate fall before anything else changes.</p>';
+    }
+    body.innerHTML = h;
+  }
+
+  // ---- what the 3D lab tells the page --------------------------------------------------------
+  function onUnityEvent(json) {
+    var msg; try { msg = JSON.parse(json); } catch (e) { console.warn('bad message', json); return; }
+    if (msg.type === 'state') { state = msg; render(); }
+  }
+  function attachUnity(instance) {
+    unity = instance;
+    $('loading').style.display = 'none';
+    pushers.forEach(function (p) { p(); });
+    send('SetLens', lens);
+  }
+  window.PhotoLab = {
+    onUnityEvent: onUnityEvent,
+    attachUnity: attachUnity,
+    unityProgress: function (p) { $('progress').style.width = Math.round(p * 100) + '%'; },
+    unityBanner: function (message, type) { var b = $('banner'); b.textContent = message; b.style.display = 'block'; if (type !== 'error') setTimeout(function () { b.style.display = 'none'; }, 5000); },
+    unityFailed: function (error) { $('loading').innerHTML = '<div>The lab could not start.</div><div class="hint">' + String(error) + '</div>'; }
+  };
+  render();
+})();
+</script>
+
+<script>
+  (function () {
+    var lab = window.PhotoLab;
+    var canvas = document.querySelector("#unity-canvas");
+    var buildUrl = "Build";
+    var loaderUrl = buildUrl + "/PhotoLab.loader.js";
+    var config = {
+      arguments: [],
+      dataUrl: buildUrl + "/PhotoLab.data.unityweb",
+      frameworkUrl: buildUrl + "/PhotoLab.framework.js.unityweb",
+      codeUrl: buildUrl + "/PhotoLab.wasm.unityweb",
+      streamingAssetsUrl: "StreamingAssets",
+      companyName: "DefaultCompany",
+      productName: "Photosynthesis Lab",
+      productVersion: "0.1.0",
+      showBanner: function (message, type) { lab.unityBanner(message, type); }
+    };
+
+    var script = document.createElement("script");
+    script.src = loaderUrl;
+    script.onload = function () {
+      createUnityInstance(canvas, config, function (progress) { lab.unityProgress(progress); })
+        .then(function (instance) { lab.attachUnity(instance); })
+        .catch(function (error) { lab.unityFailed(error); });
+    };
+    script.onerror = function () { lab.unityFailed("The lab files did not load."); };
+    document.body.appendChild(script);
+  })();
+</script>
+</body>
+</html>
