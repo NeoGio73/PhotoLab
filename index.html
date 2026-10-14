@@ -42,6 +42,17 @@
   .spectrum-labels { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; font-size: 11px; color: var(--muted); text-align: center; }
   .hint { color: var(--muted); font-size: 13px; margin: 6px 0 0; }
   .big { font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .steps { padding-left: 20px; margin: 0; }
+  .steps li { margin: 4px 0; color: var(--muted); }
+  .steps li.done { color: var(--ink); }
+  .steps li.done::marker { color: var(--accent); }
+  .cups { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .cups button { padding: 6px 4px; border: 1px solid var(--line); background: var(--panel); border-radius: 6px; cursor: pointer; font: inherit; font-size: 12px; line-height: 1.3; }
+  .cups button.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  .cups button b { display: block; font-size: 14px; }
+  .notebook { padding-left: 18px; margin: 0; max-height: 220px; overflow-y: auto; font-size: 13px; }
+  .notebook li { margin: 3px 0; }
+  .notebook li span { color: var(--muted); font-variant-numeric: tabular-nums; margin-right: 4px; }
   .seaonly { display: none; }
   body.marine .seaonly { display: grid; }
 </style>
@@ -63,7 +74,7 @@
       <button data-lens="earth">Earth science</button>
     </nav>
     <div id="stage">
-      <canvas id="unity-canvas" tabindex="-1" aria-label="3D fume hood holding a lamp over four cups of leaf disks, a rack of colour filters, syringes, a specimen shelf, a seagrass tank, a PAR meter and a timer"></canvas>
+      <canvas id="unity-canvas" tabindex="-1" aria-label="3D fume hood: a lamp over four cups, a rack of colour filters, four syringes, a hole punch and leaf, a specimen shelf, a seagrass tank, stock bottles, a PAR meter and a timer. Drag and tap to do the assay."></canvas>
       <div id="loading"><div>Loading the lab…</div><div class="bar"><i id="progress"></i></div></div>
       <div id="banner"></div>
     </div>
@@ -74,34 +85,42 @@
   </section>
   <aside>
     <div class="card">
-      <h2>Set-up</h2>
-      <div class="row"><label for="specimen">Specimen</label>
-        <select id="specimen">
-          <option value="spinach">spinach</option>
-          <option value="coleus">coleus (green)</option>
-          <option value="coleus-white">coleus (white)</option>
-          <option value="seagrass">turtle grass (tank)</option>
-        </select></div>
-      <div class="row"><label for="filter">Filter</label>
+      <h2>Protocol</h2>
+      <ol class="steps" id="steps">
+        <li data-step="punch">Carry the <b>hole punch</b> to a plant on the shelf and tap it: ten disks.</li>
+        <li data-step="load">Pick up a <b>syringe</b>, tap the pile of disks to load them.</li>
+        <li data-step="draw">Tap the <b>0.2% NaHCO₃</b> bottle to draw 5 mL (the carbon source).</li>
+        <li data-step="detergent">Tap the <b>detergent</b> for one drop, so the water wets the leaf.</li>
+        <li data-step="pull">Tap empty bench to <b>pull a vacuum</b>; repeat until every disk sinks.</li>
+        <li data-step="pour">Tap a <b>cup</b> to pour the disks in.</li>
+        <li data-step="lamp">Drag the <b>lamp head</b> to set its height; slide a <b>filter</b> in if you want one.</li>
+        <li data-step="timer">Tap the <b>timer</b> and count the disks that float each minute.</li>
+      </ol>
+      <p class="hint">Nothing stops you doing it wrong. Skip the detergent or the vacuum and see what the data say.</p>
+    </div>
+    <div class="card">
+      <h2>Bench</h2>
+      <div class="row"><label for="speed">Lab clock</label>
+        <select id="speed"><option value="1">real time</option><option value="10" selected>10× faster</option><option value="60">60× faster</option></select></div>
+      <div class="row"><label for="ambient">Room temperature</label><span><input type="range" id="ambient" min="10" max="40" step="1" value="22"> <output id="ambient-out">22 °C</output></span></div>
+      <div class="row"><label for="distance">Lamp height (or drag it)</label><span><input type="range" id="distance" min="5" max="50" step="1" value="15"> <output id="distance-out">15 cm</output></span></div>
+      <div class="row"><label for="filter">Filter (or slide one in)</label>
         <select id="filter">
           <option value="clear">none</option><option value="blue">blue</option><option value="green">green</option><option value="red">red</option>
         </select></div>
-      <div class="row"><label for="distance">Lamp distance</label><span><input type="range" id="distance" min="5" max="50" step="1" value="15"> <output id="distance-out">15 cm</output></span></div>
-      <div class="row"><label for="bicarb">NaHCO₃ (% w/v)</label><span><input type="range" id="bicarb" min="0" max="1" step="0.05" value="0.2"> <output id="bicarb-out">0.20 %</output></span></div>
-      <div class="row"><label for="ambient">Room temperature</label><span><input type="range" id="ambient" min="10" max="40" step="1" value="22"> <output id="ambient-out">22 °C</output></span></div>
-      <div class="row"><label for="detergent">Drop of detergent added</label><input type="checkbox" id="detergent" checked></div>
-      <div class="row"><label for="infiltration">Disks that sank after the syringe</label><span><input type="range" id="infiltration" min="0" max="1" step="0.1" value="1"> <output id="infiltration-out">10 of 10</output></span></div>
       <div class="row seaonly"><label for="depth">Simulated depth</label><span><input type="range" id="depth" min="0" max="5" step="0.25" value="0.5"> <output id="depth-out">0.5 m</output></span></div>
       <div class="row seaonly"><label for="kd">Water clarity (K<sub>d</sub>)</label><span><input type="range" id="kd" min="0.1" max="3" step="0.1" value="0.4"> <output id="kd-out">0.4 /m</output></span></div>
       <div class="row seaonly"><label for="salinity">Salinity</label><span><input type="range" id="salinity" min="0" max="45" step="1" value="35"> <output id="salinity-out">35 ppt</output></span></div>
+      <div class="big" id="clock">00:00</div>
+      <div class="run"><button id="start" class="primary">Start</button><button id="stop">Pause</button><button id="reset">Reset</button><button id="wash">Wash up</button></div>
     </div>
     <div class="card">
-      <h2>Run</h2>
-      <div class="row"><label for="speed">Lab clock</label>
-        <select id="speed"><option value="1">real time</option><option value="10" selected>10× faster</option><option value="60">60× faster</option></select></div>
-      <div class="big" id="clock">00:00</div>
-      <div class="run"><button id="start" class="primary">Start</button><button id="stop">Pause</button><button id="reset">Reset</button></div>
-      <p class="hint" id="disks-line">10 disks on the bottom.</p>
+      <h2>Cups</h2>
+      <div class="cups" id="cups"></div>
+    </div>
+    <div class="card">
+      <h2>Notebook</h2>
+      <ol class="notebook" id="notebook"></ol>
     </div>
   </aside>
 </main>
@@ -143,38 +162,69 @@
     return push;
   }
   var pushers = [
-    wire('specimen', 'SetSpecimen'),
-    wire('filter', 'SetFilter'),
     wire('distance', 'SetLampDistance', 'distance-out', function (v) { return v + ' cm'; }),
-    wire('bicarb', 'SetBicarbonate', 'bicarb-out', function (v) { return Number(v).toFixed(2) + ' %'; }),
+    wire('filter', 'SetFilter'),
     wire('ambient', 'SetAmbient', 'ambient-out', function (v) { return v + ' °C'; }),
-    wire('detergent', 'SetDetergent'),
-    wire('infiltration', 'SetInfiltration', 'infiltration-out', function (v) { return Math.round(v * 10) + ' of 10'; }),
     wire('depth', 'SetDepth', 'depth-out', function (v) { return v + ' m'; }),
     wire('kd', 'SetTurbidity', 'kd-out', function (v) { return v + ' /m'; }),
     wire('salinity', 'SetSalinity', 'salinity-out', function (v) { return v + ' ppt'; }),
     wire('speed', 'SetSpeed')
   ];
-  $('specimen').addEventListener('change', function () { document.body.classList.toggle('marine', $('specimen').value === 'seagrass'); });
   $('start').addEventListener('click', function () { send('StartRun'); });
   $('stop').addEventListener('click', function () { send('StopRun'); });
   $('reset').addEventListener('click', function () { send('ResetRun'); });
+  $('wash').addEventListener('click', function () { send('WashUp'); notes.length = 0; done = {}; renderNotebook(); renderSteps(); });
+
+  // ---- notebook and protocol progress ----------------------------------------------------------
+  var notes = [], done = {};
+  function renderNotebook() {
+    var ol = $('notebook');
+    ol.innerHTML = notes.map(function (n) { return '<li><span>' + clock(n.minutes) + '</span>' + n.text + '</li>'; }).join('');
+    ol.scrollTop = ol.scrollHeight;
+  }
+  function renderSteps() {
+    Array.prototype.forEach.call($('steps').querySelectorAll('li'), function (li) { li.classList.toggle('done', !!done[li.getAttribute('data-step')]); });
+  }
+  function noteStep(text) {
+    if (/^Punched/.test(text)) done.punch = true;
+    if (/disks dropped into the barrel/.test(text)) done.load = true;
+    if (/drew 5 mL/.test(text)) done.draw = true;
+    if (/detergent into/.test(text)) done.detergent = true;
+    if (/plunger pulled/.test(text)) done.pull = true;
+    if (/^Poured/.test(text)) done.pour = true;
+    if (/^Lamp set|under the lamp/.test(text)) done.lamp = true;
+    if (/^Timer started/.test(text)) done.timer = true;
+    renderSteps();
+  }
+  function renderCups() {
+    var s = state; if (!s || !s.cups) return;
+    $('cups').innerHTML = s.cups.map(function (c, i) {
+      var body = !c.present ? 'empty' : (c.floated + '/' + c.disks + ' up' + (c.neverSank ? ', ' + c.neverSank + ' never sank' : '') + (c.et50 >= 0 ? '<br>ET50 ' + fmt(c.et50) + ' min' : ''));
+      return '<button data-cup="' + i + '" class="' + (i === s.cup ? 'on' : '') + '"><b>Cup ' + (i + 1) + '</b>' + body + '</button>';
+    }).join('');
+    Array.prototype.forEach.call($('cups').querySelectorAll('button'), function (b) {
+      b.addEventListener('click', function () { send('SelectCup', b.getAttribute('data-cup')); });
+    });
+  }
 
   // ---- readouts ------------------------------------------------------------------------------
   var BIN_COLORS = ['#6a4cff', '#2a7fff', '#2fbf4a', '#e8c21a', '#ff7a1a', '#e0262b'];
   function render() {
     var title = $('readout-title'), body = $('readout-body');
-    var s = state;
-    if (!s) { body.className = 'hint'; body.textContent = 'Waiting for the lab…'; return; }
+    var bench = state;
+    if (!bench || !bench.model) { body.className = 'hint'; body.textContent = 'Waiting for the lab…'; return; }
+    var s = bench.model;
     body.className = '';
-    $('clock').textContent = clock(s.minutes);
-    $('disks-line').textContent = s.sunk + ' on the bottom, ' + s.floated + ' floating' + (s.excluded ? ', ' + s.excluded + ' never sank (not counted)' : '') + (s.et50 >= 0 ? '. ET50 = ' + fmt(s.et50) + ' min' : '') + '.';
+    $('clock').textContent = clock(bench.minutes);
+    document.body.classList.toggle('marine', s.specimen === 'seagrass');
+    renderCups();
+    var cupName = 'Cup ' + (bench.cup + 1) + (s.present ? '' : ' (empty)');
     var h = '';
     if (lens === 'bench') {
-      title.textContent = 'Bench';
-      h = '<p>' + s.specimen + ', ' + s.filter + ' filter, lamp at ' + fmt(s.lampDistanceCm, 0) + ' cm, ' + fmt(s.bicarbonatePercent, 2) + ' % NaHCO₃. Water ' + fmt(s.waterCelsius) + ' °C.</p>';
+      title.textContent = 'Bench: ' + cupName;
+      h = '<p>' + (s.present ? s.specimen + ' disks, ' : 'no disks yet, ') + (s.present ? s.filter : s.filter) + ', ' + s.filter + ' filter, lamp at ' + fmt(s.lampDistanceCm, 0) + ' cm, ' + fmt(s.bicarbonatePercent, 2) + ' % NaHCO₃. Water ' + fmt(s.waterCelsius) + ' °C.</p>';
     } else if (lens === 'physics') {
-      title.textContent = 'Physics: light';
+      title.textContent = 'Physics: light' + ' · ' + cupName;
       h = '<div class="row"><span>PAR at the lamp distance, no filter (inverse square)</span><b>' + fmt(s.parUnfiltered, 0) + '</b></div>' +
           '<div class="row"><span>PAR at the water surface, after the filter (what the meter reads)</span><b>' + fmt(s.parSurface, 0) + '</b></div>' +
           (s.specimen === 'seagrass' ? '<div class="row"><span>PAR at the blades, after ' + fmt(s.depthM, 2) + ' m of water (Beer–Lambert, K<sub>d</sub> = ' + fmt(s.kdPerM) + ' /m)</span><b>' + fmt(s.parLeaf, 0) + '</b></div>' : '') +
@@ -185,7 +235,7 @@
       h += '<div class="spectrum-labels">' + s.binNm.map(function (nm, i) { return nm + ' nm<br>' + fmt(s.binEnergyEv[i], 2) + ' eV'; }).join('') + '</div>';
       h += '<p class="hint">E = hc/λ. A red photon carries less energy than a blue one, yet drives photosynthesis at least as well: the reaction centres count photons, not joules.</p>';
     } else if (lens === 'chemistry') {
-      title.textContent = 'Chemistry: the carbon supply';
+      title.textContent = 'Chemistry: the carbon supply' + ' · ' + cupName;
       h = '<div class="row"><span>Dissolved inorganic carbon</span><b>' + fmt(s.dicMm, 1) + ' mM</b></div>' +
           '<div class="row"><span>pH</span><b>' + fmt(s.pH, 1) + '</b></div>' +
           '<table><tr><th>Species</th><th>Fraction</th><th>mM</th></tr>' +
@@ -196,7 +246,7 @@
           '<div class="row"><span>Temperature factor (water ' + fmt(s.waterCelsius) + ' °C)</span><b>' + fmt(s.temperatureFactor, 2) + '</b></div>' +
           '<p class="hint">6 CO₂ + 6 H₂O → C₆H₁₂O₆ + 6 O₂. One O₂ out for one CO₂ in: the oxygen that floats the disks is a count of carbon fixed.</p>';
     } else if (lens === 'biology') {
-      title.textContent = 'Biology: the rate';
+      title.textContent = 'Biology: the rate' + ' · ' + cupName;
       h = '<div class="row"><span>Gross photosynthesis</span><b>' + fmt(s.grossRate * 1000, 1) + ' nmol O₂ disk⁻¹ min⁻¹</b></div>' +
           '<div class="row"><span>Respiration</span><b>−' + fmt(s.respiration * 1000, 1) + '</b></div>' +
           '<div class="row"><span>Net rate</span><b>' + fmt(s.netRate * 1000, 1) + '</b></div>' +
@@ -206,14 +256,14 @@
       title.textContent = 'Microbiology';
       h = '<p class="hint">Coming next: swap the disks for a Chlorella culture and count cells on the hemocytometer. The same model runs; the "disk" becomes a cell.</p>';
     } else if (lens === 'math') {
-      title.textContent = 'Math: the data';
+      title.textContent = 'Math: the data' + ' · ' + cupName;
       h = '<table><tr><th>Disk</th><th>Floated at (min)</th></tr>' + s.floatMinutes.map(function (t, i) {
-        return '<tr><td>' + (i + 1) + '</td><td>' + (t < 0 ? '—' : (t === 0 && s.excluded ? 'never sank' : fmt(t, 1))) + '</td></tr>'; }).join('') + '</table>' +
-        '<div class="row"><span>Floating</span><b>' + s.floated + ' of ' + (10 - s.excluded) + '</b></div>' +
+        if (i >= s.present) return ''; return '<tr><td>' + (i + 1) + '</td><td>' + (t < 0 ? '—' : (t === 0 ? 'never sank' : fmt(t, 1))) + '</td></tr>'; }).join('') + '</table>' +
+        '<div class="row"><span>Floating</span><b>' + s.floated + ' of ' + (s.present - s.excluded) + '</b></div>' +
         '<div class="row"><span>ET50 (median float time)</span><b>' + (s.et50 >= 0 ? fmt(s.et50, 1) + ' min' : 'not yet') + '</b></div>' +
         '<p class="hint">Rate ∝ 1/ET50. Plot 1/ET50 against lamp distance, filter, or bicarbonate to compare conditions.</p>';
     } else if (lens === 'earth') {
-      title.textContent = 'Earth science: scaling up';
+      title.textContent = 'Earth science: scaling up' + ' · ' + cupName;
       h = '<div class="row"><span>Net O₂ per square metre of leaf</span><b>' + fmt(s.netPerM2PerSecond, 1) + ' µmol m⁻² s⁻¹</b></div>' +
           '<div class="row"><span>Carbon fixed per square metre, 12 h of light</span><b>' + fmt(s.gramsCarbonPerM2PerDay, 2) + ' g C day⁻¹</b></div>' +
           (s.specimen === 'seagrass' ? '<div class="row"><span>Depth / clarity / salinity</span><b>' + fmt(s.depthM, 2) + ' m / ' + fmt(s.kdPerM) + ' /m / ' + fmt(s.salinityPpt, 0) + ' ppt</b></div>' : '') +
@@ -226,6 +276,8 @@
   function onUnityEvent(json) {
     var msg; try { msg = JSON.parse(json); } catch (e) { console.warn('bad message', json); return; }
     if (msg.type === 'state') { state = msg; render(); }
+    else if (msg.type === 'note') { notes.push(msg); renderNotebook(); noteStep(msg.text); }
+    else if (msg.type === 'lens' && msg.lens !== lens) { lens = msg.lens; Array.prototype.forEach.call(lensButtons, function (b) { b.classList.toggle('on', b.getAttribute('data-lens') === lens); }); render(); }
   }
   function attachUnity(instance) {
     unity = instance;
