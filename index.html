@@ -6,12 +6,12 @@
 <title>Photosynthesis Lab: the leaf disk assay</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%232f7d32'/%3E%3Ccircle cx='16' cy='16' r='8' fill='%23fff'/%3E%3C/svg%3E">
 <style>
-  :root { --ink: #1c2430; --paper: #f6f6f2; --panel: #ffffff; --line: #d7d9d4; --accent: #2f7d32; --accent-ink: #fff; --muted: #5f6872; }
+  :root { --ink: #111519; --paper: #f6f6f2; --panel: #ffffff; --line: #cfd2cc; --accent: #276b2a; --accent-ink: #fff; --muted: #3a424b; }
   * { box-sizing: border-box; }
-  body { margin: 0; font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); background: var(--paper); }
+  body { margin: 0; font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); background: var(--paper); }
   header { padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--panel); display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
   header h1 { font-size: 18px; margin: 0; }
-  header .sub { color: var(--muted); }
+  header .sub { color: var(--ink); }
   main { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 12px; padding: 12px 16px; }
   @media (max-width: 980px) { main { grid-template-columns: 1fr; } }
   #stage { position: relative; background: #e6e6e0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; aspect-ratio: 16 / 10; }
@@ -25,7 +25,7 @@
   .lenses button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
   aside { display: flex; flex-direction: column; gap: 12px; }
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
-  .card h2 { font-size: 14px; margin: 0 0 8px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .card h2 { font-size: 14px; font-weight: 700; margin: 0 0 8px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink); }
   .row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; margin: 6px 0; }
   .row label { color: var(--ink); }
   .row input[type=range] { width: 150px; }
@@ -39,20 +39,20 @@
   td:first-child, th:first-child { text-align: left; }
   .spectrum { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; align-items: end; height: 90px; margin: 8px 0 4px; }
   .spectrum i { display: block; border-radius: 3px 3px 0 0; min-height: 2px; }
-  .spectrum-labels { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; font-size: 11px; color: var(--muted); text-align: center; }
-  .hint { color: var(--muted); font-size: 13px; margin: 6px 0 0; }
+  .spectrum-labels { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; font-size: 12px; color: var(--ink); text-align: center; }
+  .hint { color: var(--muted); font-size: 14px; margin: 6px 0 0; }
   .big { font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums; }
   .steps { padding-left: 20px; margin: 0; }
-  .steps li { margin: 4px 0; color: var(--muted); }
-  .steps li.done { color: var(--ink); }
+  .steps li { margin: 5px 0; color: var(--ink); }
+  .steps li.done { color: var(--accent); }
   .steps li.done::marker { color: var(--accent); }
   .cups { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-  .cups button { padding: 6px 4px; border: 1px solid var(--line); background: var(--panel); border-radius: 6px; cursor: pointer; font: inherit; font-size: 12px; line-height: 1.3; }
+  .cups button { padding: 6px 4px; border: 1px solid var(--line); background: var(--panel); border-radius: 6px; cursor: pointer; font: inherit; font-size: 13px; line-height: 1.3; color: var(--ink); }
   .cups button.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
   .cups button b { display: block; font-size: 14px; }
-  .notebook { padding-left: 18px; margin: 0; max-height: 220px; overflow-y: auto; font-size: 13px; }
+  .notebook { padding-left: 18px; margin: 0; max-height: 260px; overflow-y: auto; font-size: 14px; color: var(--ink); }
   .notebook li { margin: 3px 0; }
-  .notebook li span { color: var(--muted); font-variant-numeric: tabular-nums; margin-right: 4px; }
+  .notebook li span { color: var(--muted); font-weight: 600; font-variant-numeric: tabular-nums; margin-right: 6px; }
   .seaonly { display: none; }
   body.marine .seaonly { display: grid; }
 </style>
