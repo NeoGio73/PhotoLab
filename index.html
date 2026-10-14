@@ -53,6 +53,7 @@
   .notebook { padding-left: 18px; margin: 0; max-height: 260px; overflow-y: auto; font-size: 14px; color: var(--ink); }
   .notebook li { margin: 3px 0; }
   .notebook li span { color: var(--muted); font-weight: 600; font-variant-numeric: tabular-nums; margin-right: 6px; }
+  .hand { margin-top: 10px; padding: 8px 12px; background: #e8f3e8; border: 1px solid #b9d8b9; border-radius: 6px; color: var(--ink); font-size: 15px; }
   .seaonly { display: none; }
   body.marine .seaonly { display: grid; }
 </style>
@@ -78,6 +79,7 @@
       <div id="loading"><div>Loading the lab…</div><div class="bar"><i id="progress"></i></div></div>
       <div id="banner"></div>
     </div>
+    <div class="hand" id="hand">Pick up the <b>hole punch</b> and tap a plant on the shelf.</div>
     <div class="card" id="readout" style="margin-top:12px">
       <h2 id="readout-title">Bench</h2>
       <div id="readout-body" class="hint">Set up the cups, then start the run. Switch lenses at any time: every lens reads the same experiment.</div>
@@ -272,11 +274,21 @@
     body.innerHTML = h;
   }
 
+  // ---- what is in the hand, and what it can be used on -------------------------------------------
+  function hand(item, id) {
+    var el = $('hand');
+    if (item === 'holding-syringe') el.innerHTML = 'In hand: <b>syringe ' + id + '</b>. Tap the <b>dish</b> to load disks, a <b>bottle</b> to draw from it, the <b>detergent</b> for a drop, <b>empty bench</b> to pull a vacuum, a <b>cup</b> to pour; tap the rack to put it back.';
+    else if (item === 'holding-punch') el.innerHTML = 'In hand: <b>hole punch</b>. Tap a plant on the shelf to cut ten disks.';
+    else if (item === 'holding-filter') el.innerHTML = 'In hand: <b>' + id + ' filter</b>. Tap the <b>lamp head</b> to slide it in; tap elsewhere to put it back.';
+    else if (item === '' || item === 'none') el.innerHTML = (state && state.stackDisks > 0) ? 'Ten disks are in the <b>dish</b>. Pick up a <b>syringe</b> and tap the dish.' : 'Pick up the <b>hole punch</b> and tap a plant on the shelf.';
+  }
+
   // ---- what the 3D lab tells the page --------------------------------------------------------
   function onUnityEvent(json) {
     var msg; try { msg = JSON.parse(json); } catch (e) { console.warn('bad message', json); return; }
     if (msg.type === 'state') { state = msg; render(); }
     else if (msg.type === 'note') { notes.push(msg); renderNotebook(); noteStep(msg.text); }
+    else if (msg.type === 'hover') { hand(msg.item, msg.id); }
     else if (msg.type === 'lens' && msg.lens !== lens) { lens = msg.lens; Array.prototype.forEach.call(lensButtons, function (b) { b.classList.toggle('on', b.getAttribute('data-lens') === lens); }); render(); }
   }
   function attachUnity(instance) {
