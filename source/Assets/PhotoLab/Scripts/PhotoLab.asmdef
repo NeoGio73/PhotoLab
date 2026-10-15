@@ -1,0 +1,24 @@
+{
+    "name": "PhotoLab",
+    "rootNamespace": "PhotoLab",
+    "references": [
+        "Unity.InputSystem"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "!DENSITY_LAB_BUILD",
+        "!PH_LAB_BUILD",
+        "!ENZYME_LAB_BUILD",
+        "!DOUBLE_LAB_BUILD",
+        "!INK_LAB_BUILD",
+        "!CHANGES_LAB_BUILD",
+        "!SPECTRUM_LAB_BUILD"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
